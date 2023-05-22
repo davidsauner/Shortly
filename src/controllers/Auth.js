@@ -1,58 +1,77 @@
-import {db} from "../database/data.js"
-import bcrypt from "bcrypt"
-import { v4 as uuid } from "uuid";
+import { db } from "../database/data.js";
+import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
 
-export async function SingUp(req,res){
-    const {name, email, password} = req.body;
+export async function signUp(req, res) {
+	const { email, name, password, confirmPassword } = req.body;
+	const hashedPassword = bcrypt.hashSync(password, 10);
 
-try{
-    const useremail = await db.query(`SELECT * FROM users WHERE email=$1`,[email]);
+	try {
+		const emailExists = await db.query(
+			`SELECT * FROM users WHERE "email" = $1`,
+			[email]
+		);
+		if (emailExists.rows.length > 0) {
+			return res.status(409).send("email already in use!");
+		}
 
-if (useremail.rowCount > 0) return res.sendStatus(409)
-
-const passwordHash = bcrypt.hashSync(password, 10);
-
-await db.query(`INSERT INTO users (name ,email, password) VALUES($1, $2, $3)`,[name, email, passwordHash])
-
-}catch(err){
-
-    res.status500.send(err.message)
+		const user = await db.query(
+			`
+        	INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *
+        `,
+			[name, email, hashedPassword]
+		);
+		return res.status(201).send("user added successfully");
+	} catch (err) {
+		console.log(err);
+		return res.status(500).send(err.message);
+	}
 }
 
-    
-   
-    
-    
-    res.sendStatus(201)
-}
+export async function signIn(req, res) {
+	const { email, password } = req.body;
+	const token = uuidv4();
 
+	try {
+		const userExists = await db.query(
+			`SELECT * FROM users WHERE "email" = $1`,
+			[email]
+		);
+		if (userExists.rows.length === 0) {
+			return res.status(401).send("email or password are incorrect");
+		}
 
-export async function SingIn(req, res){
-    const {email, password} = req.body
+		const isCorrectPassword = bcrypt.compareSync(
+			password,
+			userExists.rows[0].password
+		);
+		if (!isCorrectPassword) {
+			return res.status(401).send("email or password are incorrect");
+		}
 
- try{
-    const {rows: finduser} = await db.query(`SELECT * FROM users WHERE email = $1`,[email]);
-   
-const [user] = finduser;
+		const userId = userExists.rows[0].id;
 
-if (!user){return res.sendStatus(401);}
+		const checkSession = await db.query(
+			`SELECT * FROM sessions WHERE "user_id" = $1`,
+			[userId]
+		);
 
-if (bcrypt.compareSync(password, user.password)){
-    const token = uuid();
+		if (checkSession.rows.length === 0) {
+			const insertSession = await db.query(
+				`INSERT INTO sessions (token, user_id) VALUES ($1, $2) RETURNING *`,
+				[token, userId]
+			);
 
+			const returnToken = insertSession.rows[0].token
 
-    await db.query(`INSERT INTO sessions (token, "userId") VALUES ($1, $2)`, [token, user.id]);
+			return res.status(200).json({ token : returnToken});
+		} else {
 
-    return res.send(token)
+			const returnToken = checkSession.rows[0].token
 
-}
-
-res.sendStatus(401)
-    
-
- }catch(err){
-
-    res.status(500).send(err.message)
-}
-        
+			return res.status(200).json({ token : returnToken});
+		}
+	} catch (err) {
+		res.status(500).send(err.message);
+	}
 }

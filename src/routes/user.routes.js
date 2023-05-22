@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { userValidate } from '../middlewares/ValidateSchema.js';
-import { getUser,getRank } from "../controllers/User.js";
-const router = Router();
+import { ranking } from "../controllers/Ranking.js"
+import { Router } from 'express'
 
-router.get("/users/me",userValidate, getUser)
-router.get("/ranking",getRank)
 
-export default router
+const RankingRouter = Router();
+
+RankingRouter.get("/ranking", ranking);
+
+export default RankingRouter;

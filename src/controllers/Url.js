@@ -1,75 +1,139 @@
-import { nanoid } from "nanoid";
-import {db} from "../database/data.js"
+import { db } from "../database/data.js"
+import { customAlphabet } from "nanoid";
 
+export async function shortenUrl(req, res) {
+	const { url } = req.body;
+	const currentSession = res.locals.session;
+	const user = currentSession.rows[0].user_id;
 
-export async function UrlShorten(req,res){
-    const {id} = res.locals.user;
-    const{url} = req.body;
+	const nanoid = customAlphabet("1234567890abcdef", 8);
+	const shortenedUrl = nanoid();
 
-const shortUrl = nanoid(8)
+	try {
+		const shorten = await db.query(
+			`
+        	INSERT INTO urls (user_id , url, short_url) VALUES ($1, $2, $3) RETURNING *
+        `,
+			[user, url, shortenedUrl]
+		);
+		const returning = shorten.rows[0];
 
-try{
-    await db.query(`INSERT INTO shortens (url, "shortUrl","userId") VALUES($1,$2,$3)`,[url, shortUrl, id]);
-
-res.status(201).send({shortUrl})
-
-}catch(err){res.status(500).send(err.message)}
-
-
+		return res
+			.status(201)
+			.json({ id: returning.id, shortUrl: returning.short_url });
+	} catch (err) {
+		return res.status(500).send(err);
+	}
 }
 
-export async function getUrlId(req, res){
-    const {id} = req.params;
+export async function getUrl(req, res) {
+	const { id } = req.params;
 
-    try {
-        const {rows: findurl} = await db.query(`SELECT * FROM shortens WHERE id = $1`,[id])
+	try {
+		const chosenUrl = await db.query(
+			`SELECT * FROM urls WHERE "id" = $1`,
+			[id]
+		);
 
-        if(findurl.length === 0) {return res.sendStatus(404)}
-        const [url] = findurl
+		if (chosenUrl.rowCount === 0) {
+			return res.status(404).send("No url with this id");
+		}
 
-        delete url.views
-        delete url.userId
-        delete url.createdAt
-        res.send(url)
+		const returning = chosenUrl.rows[0];
 
-    }catch(err){res.status(500).send(err.message)}
+		return res.status(200).json({
+			id: returning.id,
+			shortUrl: returning.short_url,
+			url: returning.url,
+		});
+	} catch (err) {
+		return res.status(500).send(err);
+	}
 }
 
-export async function openUrl(req,res) {
+export async function openUrl(req, res) {
+	const { shortUrl } = req.params;
+	try {
+		const chosenUrl = await db.query(
+			`SELECT * FROM urls WHERE "short_url" = $1`,
+			[shortUrl]
+		);
+		if (chosenUrl.rowCount === 0) {
+			return res.status(404).send("Url not found");
+		}
 
-const {shortUrl} = req.params;
+		const updatedVisitCount = chosenUrl.rows[0].visit_count + 1;
 
-try {
-    const {rows: findshorturls} = await db.query(`SELECT * FROM shortens WHERE "shortUrl" = $1`,[shortUrl]);
+		await db.query(
+			`UPDATE urls SET visit_count = $1 WHERE "short_url" = $2`,
+			[updatedVisitCount, shortUrl]
+		);
 
-    if(findshorturls.length === 0){return res.sendStatus(404)};
-
-    const [url] = findshorturls
-
-     await db.query(`UPDATE shortens SET views = views + 1 WHERE id = $1`, [url.id]);
-
-     res.redirect(url.url)
-
-}catch(err){res.status(500).send(err.message)}
-
-
+		return res.redirect(chosenUrl.rows[0].url);
+	} catch (err) {
+		return res.status(500).send(err);
+	}
 }
-export async function deleteUrl(req,res){
-    const {id} = req.params;
-    const {user} = req.locals.user;
 
-    try {
-        const {rows:findurl} = await db.query(`SELECT * FROM shortens WHERE id = $1`, [id]);
+export async function deleteUrl(req, res) {
+    const { id } = req.params;
+	const currentSession = res.locals.session;
+    const user = currentSession.rows[0].user_id;
 
-        if (findurl.length === 0) {return res.sendStatus(404)};
+    try{
     
-        const [url] = findurl;
-    
-        if (url.userId !== user.id) {return res.sendStatus(401)};
-    
-        await db.query("DELETE FROM shortens WHERE id=$1", [id]);
+    const chosenUrl = await db.query(
+        `SELECT * FROM urls WHERE "id" =$1`,
+        [id]
+    );
 
-        res.sendStatus(204);
-    } catch (err) {res.status(500).send(err.message)}
+		if (chosenUrl.rowCount == 0) return res.status(404).send("Id does not exist");
 
+        if (chosenUrl.rows[0].user_id !== user) return res.status(401).send("Id does not belong to this user");
+
+		await db.query (`DELETE FROM urls WHERE id =$1`,[id])
+        return res.status(204).send("Ok")
+
+    }catch(err){
+        return res.status(500).send(err);
+    }      
+}
+
+export async function myUser(req, res) {
+	const currentSession = res.locals.session;
+	const user = currentSession.rows[0].user_id;
+
+	try {
+		const userShortens = await db.query(
+			`
+		SELECT 
+		id,
+		short_url AS "shortUrl",
+		url,
+		visit_count as "visitCount"
+		FROM urls WHERE user_id =$1`,
+			[user]
+		);
+
+		const userStats = await db.query(
+			`
+			SELECT id, name,
+			(SELECT SUM(visit_count) FROM urls WHERE user_id = $1) as visitCount
+			FROM users
+			WHERE id = $1
+			`,
+			[user]
+		);
+
+		const FinalObject = {
+			id: userStats.rows[0].id,
+			name: userStats.rows[0].name,
+			visitCount: userStats.rows[0].visitcount !== null ? userStats.rows[0].visitcount : 0,
+			shortenedUrls: userShortens.rows,
+		};
+
+		return res.status(200).send(FinalObject);
+	} catch (err) {
+		return res.status(500).send(err);
+	}
 }

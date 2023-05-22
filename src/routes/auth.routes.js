@@ -1,15 +1,15 @@
+import { signIn, signUp } from "../controllers/Auth.js"
 import { Router } from 'express'
-import { SingUp,SingIn } from '../controllers/Auth.js'
-import userSchema from '../models/userSchema.js'
-import loginSchema from '../models/loginSchema.js'
-import { validateJoi } from '../middlewares/ValidateJoi.js'
-const router = Router()
+import { validateSchema } from "../middlewares/ValidateSchema.js";
+
+import  SignUpSchema  from "../model/SingUpSchema.js";
+import SignInSchema from "../model/SingInSchema.js";
+
+const UserRouter = Router();
+
+UserRouter.post("/signup", validateSchema(SignUpSchema), signUp);
+UserRouter.post("/signin", validateSchema(SignInSchema), signIn);
 
 
-router.post('/singup',validateJoi(userSchema),SingUp)
-router.post('/singin', validateJoi(loginSchema),SingIn)
 
-
-
-
-export default router
+export default UserRouter;

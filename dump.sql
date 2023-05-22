@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 12.14 (Ubuntu 12.14-0ubuntu0.20.04.1)
--- Dumped by pg_dump version 12.14 (Ubuntu 12.14-0ubuntu0.20.04.1)
+-- Dumped from database version 12.13 (Ubuntu 12.13-0ubuntu0.20.04.1)
+-- Dumped by pg_dump version 12.13 (Ubuntu 12.13-0ubuntu0.20.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -27,8 +27,8 @@ SET default_table_access_method = heap;
 CREATE TABLE public.sessions (
     id integer NOT NULL,
     token text NOT NULL,
-    active boolean DEFAULT true NOT NULL,
-    "userId" integer NOT NULL
+    user_id integer,
+    created_at timestamp without time zone DEFAULT now() NOT NULL
 );
 
 
@@ -53,24 +53,24 @@ ALTER SEQUENCE public.sessions_id_seq OWNED BY public.sessions.id;
 
 
 --
--- Name: shortens; Type: TABLE; Schema: public; Owner: -
+-- Name: urls; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.shortens (
+CREATE TABLE public.urls (
     id integer NOT NULL,
-    url text NOT NULL,
-    "shortUrl" text NOT NULL,
-    "userId" integer NOT NULL,
-    "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
-    views integer DEFAULT 0 NOT NULL
+    user_id integer,
+    url character varying(255),
+    short_url character varying(8),
+    visit_count integer DEFAULT 0,
+    created_at timestamp without time zone DEFAULT now() NOT NULL
 );
 
 
 --
--- Name: shortens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: urls_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.shortens_id_seq
+CREATE SEQUENCE public.urls_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -80,10 +80,10 @@ CREATE SEQUENCE public.shortens_id_seq
 
 
 --
--- Name: shortens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: urls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.shortens_id_seq OWNED BY public.shortens.id;
+ALTER SEQUENCE public.urls_id_seq OWNED BY public.urls.id;
 
 
 --
@@ -92,10 +92,10 @@ ALTER SEQUENCE public.shortens_id_seq OWNED BY public.shortens.id;
 
 CREATE TABLE public.users (
     id integer NOT NULL,
-    email text NOT NULL,
-    password text NOT NULL,
-    name text NOT NULL,
-    "createdAt" timestamp without time zone DEFAULT now() NOT NULL
+    name character varying(50) NOT NULL,
+    email character varying(100) NOT NULL,
+    password character varying(100) NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL
 );
 
 
@@ -127,10 +127,10 @@ ALTER TABLE ONLY public.sessions ALTER COLUMN id SET DEFAULT nextval('public.ses
 
 
 --
--- Name: shortens id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: urls id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.shortens ALTER COLUMN id SET DEFAULT nextval('public.shortens_id_seq'::regclass);
+ALTER TABLE ONLY public.urls ALTER COLUMN id SET DEFAULT nextval('public.urls_id_seq'::regclass);
 
 
 --
@@ -144,58 +144,50 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 -- Data for Name: sessions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.sessions VALUES (1, 'e5c8d0f7-cebd-4c01-af7c-c7935a4d30a1', true, 4);
-INSERT INTO public.sessions VALUES (2, '32b9ec33-5cf5-4cf5-aa5e-d75bbc379ec2', true, 4);
-INSERT INTO public.sessions VALUES (3, '66e7c766-4313-413d-858f-7f5e3732839c', true, 4);
-INSERT INTO public.sessions VALUES (4, '595074d6-bfb3-4a03-94a3-958d7fd2c9a2', true, 4);
-INSERT INTO public.sessions VALUES (5, '5769a151-d1a0-47a7-8603-be5b9c024bf9', true, 4);
-INSERT INTO public.sessions VALUES (6, '5d97de82-920f-4485-afdb-ee82021cc91d', true, 4);
-INSERT INTO public.sessions VALUES (7, 'e1dfd51c-dc7d-4c6a-8cb8-c84260aeb076', true, 4);
-INSERT INTO public.sessions VALUES (8, '08584870-5152-43a0-a136-f1bf3e03935b', true, 4);
-INSERT INTO public.sessions VALUES (9, '455f59d1-16d8-4230-b984-7d976e019f72', true, 4);
-INSERT INTO public.sessions VALUES (10, 'dc0f95ab-d0bc-42f9-9cdf-265235f9a900', true, 4);
-INSERT INTO public.sessions VALUES (11, 'e595e33d-5780-420c-a353-0cd6b3416fd8', true, 4);
-INSERT INTO public.sessions VALUES (12, '134ce7a6-42b3-4c54-a511-de3698f4e3ce', true, 4);
-INSERT INTO public.sessions VALUES (13, '64d311d5-df20-45aa-a736-d2dbd7a5e7ae', true, 4);
+INSERT INTO public.sessions VALUES (1, '06068098-8bb0-4ad4-9842-88270714e814', 1, '2023-02-23 12:44:29.637695');
+INSERT INTO public.sessions VALUES (2, 'db1603d7-b14c-4aff-a516-ddc75cd9cf7f', 2, '2023-02-23 19:10:44.134963');
 
 
 --
--- Data for Name: shortens; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: urls; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.shortens VALUES (2, 'https://www.google.com.br', 'oILDIvbo', 4, '2023-03-03 16:07:42.318256', 0);
-INSERT INTO public.shortens VALUES (1, 'https://www.google.com.br', 'ixkrZE0G', 4, '2023-03-03 15:40:45.241692', 3);
+INSERT INTO public.urls VALUES (7, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', 'f3b5c867', 0, '2023-02-23 20:14:17.582662');
+INSERT INTO public.urls VALUES (8, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', '21be7076', 0, '2023-02-23 20:14:18.06495');
+INSERT INTO public.urls VALUES (9, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', '84f3455b', 0, '2023-02-23 20:14:18.477165');
+INSERT INTO public.urls VALUES (10, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', 'e993c5fc', 0, '2023-02-23 20:14:18.821347');
+INSERT INTO public.urls VALUES (11, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', '179874ee', 0, '2023-02-23 20:14:19.132764');
+INSERT INTO public.urls VALUES (12, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', '8f0a084c', 0, '2023-02-23 20:14:19.366832');
+INSERT INTO public.urls VALUES (13, 1, 'https://thechive.com/wp-content/uploads/2022/11/vknzf7y3obw91-1.jpg?attachment_cache_bust=4236764&quality=85&strip=info', 'c27756ca', 0, '2023-02-24 11:04:03.602853');
 
 
 --
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.users VALUES (1, 'joao@driven.com.br', 'driven', 'João', '2023-03-03 12:56:53.818478');
-INSERT INTO public.users VALUES (2, 'mia@driven.com.br', 'driven', 'mia', '2023-03-03 13:32:43.514058');
-INSERT INTO public.users VALUES (3, 'dav@driven.com.br', 'driven', 'dav', '2023-03-03 13:43:28.025031');
-INSERT INTO public.users VALUES (4, 'lindao@driven.com.br', '$2b$10$bMxBlPEJPK6lc7iozNHpbOPTlnfrKqa2KtDE6icYOxUIwEiHm7rHS', 'lindao', '2023-03-03 14:01:22.149038');
+INSERT INTO public.users VALUES (1, 'jin mu won', 'northernblade@email.com', '$2b$10$FypZcT34pBuMlsO1v94y4uxG92MGDK6RTJhteIEy1PMVDqt1rOfNm', '2023-02-23 12:44:20.328176');
+INSERT INTO public.users VALUES (2, 'poisondevil', 'poisondevil@email.com', '$2b$10$lGCgXJgEv/KxqQXXoprgiujNzkPSxw3sdANfkQcXTEo/76YjREx1u', '2023-02-23 19:10:33.70906');
 
 
 --
 -- Name: sessions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.sessions_id_seq', 13, true);
+SELECT pg_catalog.setval('public.sessions_id_seq', 2, true);
 
 
 --
--- Name: shortens_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+-- Name: urls_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.shortens_id_seq', 2, true);
+SELECT pg_catalog.setval('public.urls_id_seq', 13, true);
 
 
 --
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 4, true);
+SELECT pg_catalog.setval('public.users_id_seq', 2, true);
 
 
 --
@@ -207,11 +199,19 @@ ALTER TABLE ONLY public.sessions
 
 
 --
--- Name: shortens shortens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: urls urls_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.shortens
-    ADD CONSTRAINT shortens_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.urls
+    ADD CONSTRAINT urls_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
 
 
 --
@@ -223,22 +223,21 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: sessions sessions_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sessions
-    ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.users(id);
+    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
--- Name: shortens shortens_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: urls urls_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.shortens
-    ADD CONSTRAINT "shortens_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.users(id);
+ALTER TABLE ONLY public.urls
+    ADD CONSTRAINT urls_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
 -- PostgreSQL database dump complete
 --
-

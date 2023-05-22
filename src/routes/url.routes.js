@@ -1,13 +1,15 @@
-import {Router} from 'express'
-import { userValidate } from '../middlewares/ValidateSchema.js';
-import {UrlShorten,getUrlId,openUrl,deleteUrl} from "../controllers/Url.js"
-import urlSchema from "../models/urlSchema.js"
-import { validateJoi } from '../middlewares/ValidateJoi.js';
-const router = Router();
+import { shortenUrl, getUrl, openUrl, deleteUrl, myUser } from "../controllers/Url.js"
+import { Router } from 'express'
+import { validateToken } from "../middlewares/ValidateToken.js";
+import { validateSchema } from "../middlewares/ValidateSchema.js";
+import shortenUrlSchema from "../model/urlSchema.js";
 
-router.post('/urls/shorten',validateJoi(urlSchema) ,userValidate,UrlShorten);   
-router.get('/urls/:id',getUrlId)
-router.get('/urls/open/:shortUrl',openUrl)
-router.delete('/urls/:id', deleteUrl)
+const UrlRouter = Router();
 
-export default router;
+UrlRouter.post("/urls/shorten",validateToken, validateSchema(shortenUrlSchema), shortenUrl);
+UrlRouter.get("/urls/:id", getUrl);
+UrlRouter.get("/urls/open/:shortUrl", openUrl);
+UrlRouter.delete("/urls/:id",validateToken, deleteUrl);
+UrlRouter.get("/users/me",validateToken, myUser);
+
+export default UrlRouter;
